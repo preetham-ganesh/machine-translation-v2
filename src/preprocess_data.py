@@ -18,11 +18,10 @@ logging.getLogger("tensorflow").setLevel(logging.FATAL)
 
 from bs4 import BeautifulSoup
 import pandas as pd
+import tensorflow_datasets as tfds
 
-from src.utils import check_directory_path_existence, save_text_file
+from src.utils import check_directory_path_existence, save_text_file, load_text_file
 from src.download_data import check_language
-
-from typing import Dict
 
 
 def extract_tatoeba_dataset(language: str) -> None:
@@ -40,10 +39,7 @@ def extract_tatoeba_dataset(language: str) -> None:
     check_language(language)
 
     # Creates absolute directory path for downloaded data zip file.
-    home_directory_path = os.getcwd()
-    zip_file_path = os.path.join(
-        home_directory_path, f"data/raw_data/tatoeba/{language}-en.zip"
-    )
+    zip_file_path = os.path.join(BASE_PATH, f"data/raw_data/tatoeba/{language}-en.zip")
 
     # Creates the directory path.
     extracted_data_directory_path = check_directory_path_existence(
@@ -87,10 +83,7 @@ def extract_europarl_dataset(language: str) -> None:
     check_language(language)
 
     # Creates absolute directory path for downloaded data tar file.
-    home_directory_path = os.getcwd()
-    tar_file_path = os.path.join(
-        home_directory_path, f"data/raw_data/europarl/{language}-en.tgz"
-    )
+    tar_file_path = os.path.join(BASE_PATH, f"data/raw_data/europarl/{language}-en.tgz")
 
     # Creates the directory path.
     extracted_data_directory_path = check_directory_path_existence(
@@ -239,7 +232,9 @@ def preprocess_text(text: str, language: str, n_max_words_per_text: int) -> str:
     return filtered_text
 
 
-def preprocess_tatoeba_dataset(language: str, n_max_words_per_text: int) -> None:
+def preprocess_tatoeba_dataset(
+    language: str, n_max_words_per_text: int, dataset_version: str
+) -> None:
     """Preprocesses the Tatoeba dataset for the language given as input by user.
 
     Preprocesses the Tatoeba dataset for the language given as input by user.
@@ -247,21 +242,27 @@ def preprocess_tatoeba_dataset(language: str, n_max_words_per_text: int) -> None
     Args:
         language: A string for the language the Tatoeba dataset should be preprocessed.
         n_max_words_per_text: An integer for the maximum number of words allowed in a text.
+        dataset_version: A string for the version by which the processed dataset should be saved as.
 
     Returns:
         None.
     """
     # Checks if the language is valid or not.
     check_language(language)
+    assert isinstance(
+        n_max_words_per_text, int
+    ), "Variable n_max_words_per_text should be of type 'int'."
+    assert isinstance(
+        dataset_version, str
+    ), "Variable dataset_version should be of type 'str'."
 
     # A dictionary for the name of the text files in each language.
     text_name = {"fr": "fra.txt", "de": "deu.txt", "es": "spa.txt"}
 
     # Loads the Tatoeba dataset for the language given as input by user.
-    home_directory_path = os.getcwd()
     data = pd.read_csv(
         os.path.join(
-            home_directory_path,
+            BASE_PATH,
             f"data/extracted_data/tatoeba/{language}-en",
             text_name[language],
         ),
@@ -292,7 +293,7 @@ def preprocess_tatoeba_dataset(language: str, n_max_words_per_text: int) -> None
 
     # Saves the processed dataset as a JSON file.
     processed_data_directory_path = check_directory_path_existence(
-        f"data/processed_data/tatoeba/{language}-en"
+        f"data/processed_data/v{dataset_version}tatoeba/{language}-en"
     )
 
     # Saves the processed dataset as a text file.
@@ -300,6 +301,107 @@ def preprocess_tatoeba_dataset(language: str, n_max_words_per_text: int) -> None
     save_text_file(
         "\n".join(processed_eu_texts), f"0.{language}", processed_data_directory_path
     )
+
+
+def preprocess_europarl_dataset(
+    language: str, n_max_words_per_text: int, dataset_version: str
+) -> None:
+    """Preprocesses the Europarl dataset for the language given as input by user.
+
+    Preprocesses the Europarl dataset for the language given as input by user.
+
+    Args:
+        language: A string for the language the Europarl dataset should be preprocessed.
+        n_max_words_per_text: An integer for the maximum number of words allowed in a text.
+        dataset_version: A string for the version by which the processed dataset should be saved as.
+
+    Returns:
+        None.
+    """
+    # Checks if the language is valid or not.
+    check_language(language)
+    assert isinstance(
+        n_max_words_per_text, int
+    ), "Variable n_max_words_per_text should be of type 'int'."
+    assert isinstance(
+        dataset_version, str
+    ), "Variable dataset_version should be of type 'str'."
+
+    # Loads the Europarl dataset for the language given as input by user.
+    original_en_texts = load_text_file(
+        f"europarl-v7.{language}-en.en",
+        os.path.join(BASE_PATH, f"data/extracted_data/europarl/{language}-en"),
+    ).split("\n")
+    original_eu_texts = load_text_file(
+        f"europarl-v7.{language}-en.{language}",
+        os.path.join(BASE_PATH, f"data/extracted_data/europarl/{language}-en"),
+    ).split("\n")
+
+    # Checks if the length of both the lists are equal.
+    assert len(original_en_texts) == len(
+        original_eu_texts
+    ), f"Length of en and {language} texts should be equal."
+
+    # Creates the directory path for processed data.
+    processed_data_directory_path = check_directory_path_existence(
+        f"data/processed_data/v{dataset_version}/europarl/{language}-en"
+    )
+
+    # Iterates across rows in the dataset.
+    d_id = 0
+    processed_en_texts, processed_eu_texts = list(), list()
+    for id_0 in range(len(original_en_texts)):
+
+        # Preprocesses the text in the dataset.
+        en_text = preprocess_text(original_en_texts[id_0], "en", n_max_words_per_text)
+        eu_text = preprocess_text(
+            original_eu_texts[id_0], language, n_max_words_per_text
+        )
+
+        # If text is not empty, then it is appended to list.
+        if en_text != "" and eu_text != "":
+            processed_en_texts.append(en_text)
+            processed_eu_texts.append(eu_text)
+
+        if id_0 % 1000 == 0:
+            print(
+                f"Finished processing {round((id_0 / len(original_en_texts)) * 100, 3)}% {language}-en pairs in "
+                + "Europarl dataset."
+            )
+
+        # If the length of the processed texts is 1 million, then saves the text file.
+        if len(processed_en_texts) == 1000000:
+            print()
+
+            # Saves the processed dataset as a text file.
+            save_text_file(
+                "\n".join(processed_en_texts),
+                f"{d_id}.en",
+                processed_data_directory_path,
+            )
+            save_text_file(
+                "\n".join(processed_eu_texts),
+                f"{d_id}.{language}",
+                processed_data_directory_path,
+            )
+            d_id += 1
+            processed_en_texts, processed_eu_texts = list(), list()
+            print()
+
+    # If the length of the processed texts is more than 0, then saves the text file.
+    if len(processed_en_texts) > 0:
+        print()
+        save_text_file(
+            "\n".join(processed_en_texts),
+            f"{d_id}.en",
+            processed_data_directory_path,
+        )
+        save_text_file(
+            "\n".join(processed_eu_texts),
+            f"{d_id}.{language}",
+            processed_data_directory_path,
+        )
+    print()
 
 
 def main():
@@ -321,6 +423,13 @@ def main():
         required=True,
         help="Enter no. of maximum words allowed in a text.",
     )
+    parser.add_argument(
+        "-dv",
+        "--dataset_version",
+        type=str,
+        required=True,
+        help="Enter the version by which the processed dataset should be saved as.",
+    )
     args = parser.parse_args()
 
     # Checks if the arguments, have valid values.
@@ -337,7 +446,19 @@ def main():
     extract_europarl_dataset(args.language)
 
     # Preprocesses the Tatoeba dataset for the language given as input by user.
-    preprocess_tatoeba_dataset(args.language, args.n_max_words_per_text)
+    preprocess_tatoeba_dataset(
+        args.language, args.n_max_words_per_text, args.dataset_version
+    )
+
+    # Preprocesses the Europarl dataset for the language given as input by user.
+    preprocess_europarl_dataset(
+        args.language, args.n_max_words_per_text, args.dataset_version
+    )
+
+    # Preprocesses the Paracrawl dataset for the language given as input by user.
+    preprocess_paracrawl_dataset(
+        args.language, args.n_max_words_per_text, args.dataset_version
+    )
 
 
 if __name__ == "__main__":
