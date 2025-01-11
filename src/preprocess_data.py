@@ -17,14 +17,12 @@ logging.getLogger("tensorflow").setLevel(logging.FATAL)
 
 
 from bs4 import BeautifulSoup
+import pandas as pd
 
-from src.utils import check_directory_path_existence
+from src.utils import check_directory_path_existence, save_text_file
+from src.download_data import check_language
 
 from typing import Dict
-
-
-# A dictionary for unique word count in each language.
-unique_word_count = {"en": dict(), "es": dict(), "fr": dict(), "de": dict()}
 
 
 def extract_tatoeba_dataset(language: str) -> None:
@@ -38,8 +36,8 @@ def extract_tatoeba_dataset(language: str) -> None:
     Returns:
         None.
     """
-    # Asserts type & values of the arguments.
-    assert isinstance(language, str), "Variable language should be of type 'str'."
+    # Checks if the language is valid or not.
+    check_language(language)
 
     # Creates absolute directory path for downloaded data zip file.
     home_directory_path = os.getcwd()
@@ -85,13 +83,8 @@ def extract_europarl_dataset(language: str) -> None:
     Returns:
         None.
     """
-    # Asserts type & values of the arguments.
-    assert isinstance(language, str), "Variable language should be of type 'str'."
-    assert language in [
-        "es",
-        "fr",
-        "de",
-    ], "Variable language should have value as 'es', 'fr', or 'de'."
+    # Checks if the language is valid or not.
+    check_language(language)
 
     # Creates absolute directory path for downloaded data tar file.
     home_directory_path = os.getcwd()
@@ -153,9 +146,7 @@ def remove_html_markup(text: str) -> str:
     return " ".join(text.split())
 
 
-def preprocess_text(
-    text: str, language: str, n_max_words_per_text: int, update_word_count: bool
-) -> str:
+def preprocess_text(text: str, language: str, n_max_words_per_text: int) -> str:
     """Preprocesses text to remove unwanted characters from it.
 
     Preprocesses text to remove unwanted characters from it.
@@ -181,9 +172,6 @@ def preprocess_text(
     assert isinstance(
         n_max_words_per_text, int
     ), "Variable n_max_words_per_text should be of type 'int'."
-    assert isinstance(
-        update_word_count, bool
-    ), "Variable update_word_count should be of type 'bool'."
 
     # Removes HTML markup components from text provided as input.
     text = remove_html_markup(text)
@@ -246,28 +234,72 @@ def preprocess_text(
         if word != "":
             filtered_words.append(word)
 
-            # Unique word count is updated for current word.
-            if update_word_count:
-                unique_word_count[language][word] = 1 + unique_word_count[language].get(
-                    word, 0
-                )
-
     # Converts of list of filtered words into a single string.
     filtered_text = " ".join(filtered_words)
     return filtered_text
 
 
-def preprocess_tatoeba_dataset(language: str) -> None:
+def preprocess_tatoeba_dataset(language: str, n_max_words_per_text: int) -> None:
     """Preprocesses the Tatoeba dataset for the language given as input by user.
 
     Preprocesses the Tatoeba dataset for the language given as input by user.
 
     Args:
         language: A string for the language the Tatoeba dataset should be preprocessed.
+        n_max_words_per_text: An integer for the maximum number of words allowed in a text.
 
     Returns:
         None.
     """
+    # Checks if the language is valid or not.
+    check_language(language)
+
+    # A dictionary for the name of the text files in each language.
+    text_name = {"fr": "fra.txt", "de": "deu.txt", "es": "spa.txt"}
+
+    # Loads the Tatoeba dataset for the language given as input by user.
+    home_directory_path = os.getcwd()
+    data = pd.read_csv(
+        os.path.join(
+            home_directory_path,
+            f"data/extracted_data/tatoeba/{language}-en",
+            text_name[language],
+        ),
+        sep="\t",
+        encoding="utf-8",
+        names=["en", language, "x"],
+    )
+    print(f"No. of {language}-en pairs in Tatoeba dataset: {len(data)}")
+    print()
+
+    # Iterates across rows in the dataset.
+    processed_en_texts, processed_eu_texts = list(), list()
+    for id_0, row in data.iterrows():
+
+        # Preprocesses the text in the dataset.
+        en_text = preprocess_text(str(row["en"]), "en", n_max_words_per_text)
+        eu_text = preprocess_text(str(row[language]), language, n_max_words_per_text)
+
+        # If text is not empty, then it is appended to list.
+        if en_text != "" and eu_text != "":
+            processed_en_texts.append(en_text)
+            processed_eu_texts.append(eu_text)
+        if id_0 % 1000 == 0:
+            print(
+                f"Finished processing {round((id_0 / len(data)) * 100, 3)}% {language}-en pairs in Tatoeba dataset."
+            )
+    print()
+
+    # Saves the processed dataset as a JSON file.
+    processed_data_directory_path = check_directory_path_existence(
+        f"data/processed_data/tatoeba/{language}-en"
+    )
+
+    # Saves the processed dataset as a text file.
+    save_text_file("\n".join(processed_en_texts), "0.en", processed_data_directory_path)
+    save_text_file(
+        "\n".join(processed_eu_texts), f"0.{language}", processed_data_directory_path
+    )
 
 
 def main():
@@ -281,6 +313,13 @@ def main():
         type=str,
         required=True,
         help="Enter name of language for which datasets should be downloaded. Current options: 'es', fr' or 'de'.",
+    )
+    parser.add_argument(
+        "-nmwpt",
+        "--n_max_words_per_text",
+        type=int,
+        required=True,
+        help="Enter no. of maximum words allowed in a text.",
     )
     args = parser.parse_args()
 
@@ -296,6 +335,9 @@ def main():
 
     # Extracts the Europarl dataset for the language given as input by user.
     extract_europarl_dataset(args.language)
+
+    # Preprocesses the Tatoeba dataset for the language given as input by user.
+    preprocess_tatoeba_dataset(args.language, args.n_max_words_per_text)
 
 
 if __name__ == "__main__":
