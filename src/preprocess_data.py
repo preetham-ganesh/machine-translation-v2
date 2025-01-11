@@ -5,6 +5,7 @@ import argparse
 import logging
 import unicodedata
 import re
+import zipfile
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -16,11 +17,62 @@ logging.getLogger("tensorflow").setLevel(logging.FATAL)
 
 from bs4 import BeautifulSoup
 
+from src.utils import check_directory_path_existence
+
 from typing import Dict
 
 
 # A dictionary for unique word count in each language.
 unique_word_count = {"en": dict(), "es": dict(), "fr": dict(), "de": dict()}
+
+
+def extract_data_from_zip_file(language: str) -> None:
+    """Extracts files from downloaded Tatoeba dataset zip file.
+
+    Extracts files from downloaded Tatoeba dataset zip file.
+
+    Args:
+        language: A string for the language the dataset belongs to.
+
+    Returns:
+        None.
+    """
+    # Asserts type & values of the arguments.
+    assert isinstance(language, str), "Variable language should be of type 'str'."
+
+    # Creates absolute directory path for downloaded data zip file.
+    home_directory_path = os.getcwd()
+    zip_file_path = os.path.join(
+        home_directory_path, f"data/raw_data/tatoeba/{language}-en.zip"
+    )
+
+    # Creates the directory path.
+    extracted_data_directory_path = check_directory_path_existence(
+        "data/extracted_data/tatoeba"
+    )
+
+    # A dictionary for the name of the text files in each language.
+    text_name = {"fr": "fra.txt", "de": "deu.txt", "es": "spa.txt"}
+
+    # If file does not exist, then extracts files from the directory.
+    if not os.path.exists(
+        os.path.join(
+            extracted_data_directory_path, f"/{language}-en/{text_name[language]}.csv"
+        )
+    ):
+
+        # Extracts files from downloaded data zip file into a directory.
+        try:
+            with zipfile.ZipFile(zip_file_path, "r") as zip_file:
+                zip_file.extractall(extracted_data_directory_path)
+        except FileNotFoundError as error:
+            raise FileNotFoundError(
+                f"{zip_file_path} does not exist. Run 'download_data.py' to download the data."
+            )
+        print(
+            f"Finished extracting files from 'archive.zip' to {extracted_data_directory_path}."
+        )
+        print()
 
 
 def remove_html_markup(text: str) -> str:
@@ -152,3 +204,16 @@ def preprocess_text(
     # Converts of list of filtered words into a single string.
     filtered_text = " ".join(filtered_words)
     return filtered_text
+
+
+def preprocess_tatoeba_dataset(language: str) -> None:
+    """Preprocesses the Tatoeba dataset for the language given as input by user.
+
+    Preprocesses the Tatoeba dataset for the language given as input by user.
+
+    Args:
+        language: A string for the language the Tatoeba dataset should be preprocessed.
+
+    Returns:
+        None.
+    """
