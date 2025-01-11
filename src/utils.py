@@ -44,7 +44,6 @@ def save_json_file(
         None.
     """
     # Types checks arguments.
-    assert isinstance(dictionary, dict), "Variable dictionary should be of type 'dict'."
     assert isinstance(file_name, str), "Variable file_name should be of type 'str'."
     assert isinstance(
         directory_path, str
@@ -82,7 +81,7 @@ def load_text_file(file_name: str, directory_path: str) -> str:
         directory_path, str
     ), "Variable directory_path should be of type 'str'."
 
-    file_path = "{}/{}".format(directory_path, file_name)
+    file_path = f"{directory_path}/{file_name}"
 
     # Loads the text file as string from the file location.
     try:
@@ -93,3 +92,34 @@ def load_text_file(file_name: str, directory_path: str) -> str:
 
     except FileNotFoundError:
         raise FileNotFoundError(f"{file_path} does not exist.")
+
+
+def save_text_file(text: str, file_name: str, directory_path: str) -> str:
+    """Saves string as text file.
+
+    Saves string as text file.
+
+    Args:
+        text: A string for the text that needs to be saved.
+        file_name: A string for the name of the file that needs to be saved.
+        directory_path: A string for the location where the file needs to be saved.
+
+    Returns:
+        A string for the text from the loaded file.
+    """
+    # Checks type of input documents.
+    assert isinstance(text, str), "Variable text should be of type 'str'."
+    assert isinstance(file_name, str), "Variable file_name should be of type 'str'."
+    assert isinstance(
+        directory_path, str
+    ), "Variable directory_path should be of type 'str'."
+
+    # Checks if the following path exists.
+    directory_path = check_directory_path_existence(directory_path)
+
+    # Saves the dictionary or list as a JSON file at the file path location.
+    file_path = f"{directory_path}/{file_name}"
+    with open(file_path, "w") as out_file:
+        out_file.write(text)
+    out_file.close()
+    print(f"{file_name} file saved successfully.")
