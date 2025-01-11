@@ -19,13 +19,13 @@ import tensorflow_datasets as tfds
 from src.utils import check_directory_path_existence
 
 
-def download_tatoeba_dataset(language: str) -> None:
-    """Downloads the Tatoeba dataset for the language given as input by user.
+def check_language(language: str) -> None:
+    """Checks if the language is valid or not.
 
-    Downloads the Tatoeba dataset for the language given as input by user.
+    Checks if the language is valid or not.
 
     Args:
-        language: A string for the language the Europarl dataset should be downloaded.
+        language: A string for the language which needs to be checked.
 
     Returns:
         None.
@@ -37,6 +37,21 @@ def download_tatoeba_dataset(language: str) -> None:
         "fr",
         "de",
     ], "Variable language should have value as 'es', 'fr', or 'de'."
+
+
+def download_tatoeba_dataset(language: str) -> None:
+    """Downloads the Tatoeba dataset for the language given as input by user.
+
+    Downloads the Tatoeba dataset for the language given as input by user.
+
+    Args:
+        language: A string for the language the Europarl dataset should be downloaded.
+
+    Returns:
+        None.
+    """
+    # Checks if the language is valid or not.
+    check_language(language)
 
     # A dictionary for the language-based Europarl dataset links.
     dataset_links = {
@@ -91,13 +106,8 @@ def download_europarl_dataset(language: str) -> None:
     Returns:
         None.
     """
-    # Asserts type & value of the arguments.
-    assert isinstance(language, str), "Variable language should be of type 'str'."
-    assert language in [
-        "es",
-        "fr",
-        "de",
-    ], "Variable language should have value as 'es', 'fr', or 'de'."
+    # Checks if the language is valid or not.
+    check_language(language)
 
     # A dictionary for the language-based Europarl dataset links.
     dataset_links = {
@@ -147,13 +157,8 @@ def download_paracrawl_dataset(language: str) -> None:
     Returns:
         None.
     """
-    # Asserts type & value of the arguments.
-    assert isinstance(language, str), "Variable language should be of type 'str'."
-    assert language in [
-        "es",
-        "fr",
-        "de",
-    ], "Variable language should have value as 'es', 'fr', or 'de'."
+    # Checks if the language is valid or not.
+    check_language(language)
 
     # Downloads paracrawl dataset into the corresponding directory for the current european language.
     start_time = time.time()
