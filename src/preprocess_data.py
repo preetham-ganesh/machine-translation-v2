@@ -6,6 +6,7 @@ import logging
 import unicodedata
 import re
 import zipfile
+import tarfile
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -26,10 +27,10 @@ from typing import Dict
 unique_word_count = {"en": dict(), "es": dict(), "fr": dict(), "de": dict()}
 
 
-def extract_data_from_zip_file(language: str) -> None:
-    """Extracts files from downloaded Tatoeba dataset zip file.
+def extract_tatoeba_dataset(language: str) -> None:
+    """Extracts the Tatoeba dataset for the language given as input by user.
 
-    Extracts files from downloaded Tatoeba dataset zip file.
+    Extracts the Tatoeba dataset for the language given as input by user.
 
     Args:
         language: A string for the language the dataset belongs to.
@@ -48,7 +49,7 @@ def extract_data_from_zip_file(language: str) -> None:
 
     # Creates the directory path.
     extracted_data_directory_path = check_directory_path_existence(
-        "data/extracted_data/tatoeba"
+        f"data/extracted_data/tatoeba/{language}-en"
     )
 
     # A dictionary for the name of the text files in each language.
@@ -56,9 +57,7 @@ def extract_data_from_zip_file(language: str) -> None:
 
     # If file does not exist, then extracts files from the directory.
     if not os.path.exists(
-        os.path.join(
-            extracted_data_directory_path, f"/{language}-en/{text_name[language]}.csv"
-        )
+        os.path.join(extracted_data_directory_path, text_name[language])
     ):
 
         # Extracts files from downloaded data zip file into a directory.
@@ -70,7 +69,59 @@ def extract_data_from_zip_file(language: str) -> None:
                 f"{zip_file_path} does not exist. Run 'download_data.py' to download the data."
             )
         print(
-            f"Finished extracting files from 'archive.zip' to {extracted_data_directory_path}."
+            f"Finished extracting files from '{language}-en.zip' to {extracted_data_directory_path}."
+        )
+        print()
+
+
+def extract_europarl_dataset(language: str) -> None:
+    """Extracts the Europarl dataset for the language given as input by user.
+
+    Extracts the Europarl dataset for the language given as input by user.
+
+    Args:
+        language: A string for the language the dataset belongs to.
+
+    Returns:
+        None.
+    """
+    # Asserts type & values of the arguments.
+    assert isinstance(language, str), "Variable language should be of type 'str'."
+    assert language in [
+        "es",
+        "fr",
+        "de",
+    ], "Variable language should have value as 'es', 'fr', or 'de'."
+
+    # Creates absolute directory path for downloaded data tar file.
+    home_directory_path = os.getcwd()
+    tar_file_path = os.path.join(
+        home_directory_path, f"data/raw_data/europarl/{language}-en.tgz"
+    )
+
+    # Creates the directory path.
+    extracted_data_directory_path = check_directory_path_existence(
+        f"data/extracted_data/europarl/{language}-en"
+    )
+
+    # If file does not exist, then extracts files from the directory.
+    if not os.path.exists(
+        os.path.join(
+            extracted_data_directory_path,
+            f"europarl-v7.{language}-en.{language}",
+        )
+    ):
+        # Extracts files from downloaded data tar file into a directory.
+        try:
+            file = tarfile.open(tar_file_path)
+            file.extractall(extracted_data_directory_path)
+            file.close()
+        except FileNotFoundError as error:
+            raise FileNotFoundError(
+                f"{tar_file_path} does not exist. Run 'download_data.py' to download the data."
+            )
+        print(
+            f"Finished extracting files from '{language}-en.tgz' to {extracted_data_directory_path}."
         )
         print()
 
@@ -217,3 +268,35 @@ def preprocess_tatoeba_dataset(language: str) -> None:
     Returns:
         None.
     """
+
+
+def main():
+    print()
+
+    # Parses the arguments.
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-l",
+        "--language",
+        type=str,
+        required=True,
+        help="Enter name of language for which datasets should be downloaded. Current options: 'es', fr' or 'de'.",
+    )
+    args = parser.parse_args()
+
+    # Checks if the arguments, have valid values.
+    assert args.language in [
+        "es",
+        "fr",
+        "de",
+    ], "Argument language should have value as 'es', 'fr', or 'de'."
+
+    # Extracts the Tatoeba dataset for the language given as input by user.
+    extract_tatoeba_dataset(args.language)
+
+    # Extracts the Europarl dataset for the language given as input by user.
+    extract_europarl_dataset(args.language)
+
+
+if __name__ == "__main__":
+    main()
