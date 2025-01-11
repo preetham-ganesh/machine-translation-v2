@@ -293,7 +293,7 @@ def preprocess_tatoeba_dataset(
 
     # Saves the processed dataset as a JSON file.
     processed_data_directory_path = check_directory_path_existence(
-        f"data/processed_data/v{dataset_version}tatoeba/{language}-en"
+        f"data/processed_data/v{dataset_version}/tatoeba/{language}-en"
     )
 
     # Saves the processed dataset as a text file.
@@ -301,6 +301,7 @@ def preprocess_tatoeba_dataset(
     save_text_file(
         "\n".join(processed_eu_texts), f"0.{language}", processed_data_directory_path
     )
+    print()
 
 
 def preprocess_europarl_dataset(
