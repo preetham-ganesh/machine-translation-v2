@@ -26,6 +26,34 @@ from src.download_data import check_language
 from typing import List
 
 
+class PreprocessText(object):
+    """"""
+
+    def __init__(self, language: str, n_max_words_per_text: int) -> None:
+        """Creates object attributes for the PreprocessText class.
+
+        Creates object attributes for the PreprocessText class.
+
+        Args:
+            language: A string for the name of the european language the text belongs to.
+            n_max_words_per_text: An integer for the maximum no. of the words in a text.
+
+        Returns:
+            None.
+        """
+        # Asserts type & values of the arguments.
+        check_language(language)
+        assert isinstance(
+            n_max_words_per_text, int
+        ), "Variable n_max_words_per_text should be of type 'int'."
+
+        # Initializes class variables.
+        self.language = language
+        self.n_max_words_per_text = 50
+        self.unique_word_count = {"en": dict(), language: dict()}
+        self.rare_words = {"en": set(), self.language: set()}
+
+
 def extract_tatoeba_dataset(language: str) -> None:
     """Extracts the Tatoeba dataset for the language given as input by user.
 
@@ -476,7 +504,7 @@ def identify_common_rare_words(language: str) -> List[str]:
         language: A string for the language the common rare words should be identified for.
 
     Returns:
-        None.
+        A list of common rare words between en & the european language.
     """
     # Checks if the language is valid or not.
     check_language(language)
@@ -518,7 +546,7 @@ def main():
         required=True,
         help="Enter the version by which the processed dataset should be saved as.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args()  # Add arg for dataset size.
 
     # Checks if the arguments, have valid values.
     assert args.language in [
