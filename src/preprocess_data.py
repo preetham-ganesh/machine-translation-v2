@@ -233,7 +233,8 @@ def preprocess_text(text: str, language: str, n_max_words_per_text: int) -> str:
 
 
 def preprocess_tatoeba_dataset(
-    language: str, n_max_words_per_text: int, dataset_version: str
+    language: str,
+    n_max_words_per_text: int,
 ) -> None:
     """Preprocesses the Tatoeba dataset for the language given as input by user.
 
@@ -242,7 +243,6 @@ def preprocess_tatoeba_dataset(
     Args:
         language: A string for the language the Tatoeba dataset should be preprocessed.
         n_max_words_per_text: An integer for the maximum number of words allowed in a text.
-        dataset_version: A string for the version by which the processed dataset should be saved as.
 
     Returns:
         None.
@@ -252,9 +252,6 @@ def preprocess_tatoeba_dataset(
     assert isinstance(
         n_max_words_per_text, int
     ), "Variable n_max_words_per_text should be of type 'int'."
-    assert isinstance(
-        dataset_version, str
-    ), "Variable dataset_version should be of type 'str'."
 
     # A dictionary for the name of the text files in each language.
     text_name = {"fr": "fra.txt", "de": "deu.txt", "es": "spa.txt"}
@@ -270,11 +267,11 @@ def preprocess_tatoeba_dataset(
         encoding="utf-8",
         names=["en", language, "x"],
     )
-    print(f"No. of {language}-en pairs in Tatoeba dataset: {len(data)}")
+    print(f"No. of original {language}-en pairs in Tatoeba dataset: {len(data)}")
     print()
 
     # Iterates across rows in the dataset.
-    processed_en_texts, processed_eu_texts = list(), list()
+    n_processed_pairs = 0
     for id_0, row in data.iterrows():
 
         # Preprocesses the text in the dataset.
@@ -283,23 +280,16 @@ def preprocess_tatoeba_dataset(
 
         # If text is not empty, then it is appended to list.
         if en_text != "" and eu_text != "":
-            processed_en_texts.append(en_text)
-            processed_eu_texts.append(eu_text)
+            processed_texts.append({"en": en_text, language: eu_text})
+            n_processed_pairs += 1
+
         if id_0 % 1000 == 0:
             print(
                 f"Finished processing {round((id_0 / len(data)) * 100, 3)}% {language}-en pairs in Tatoeba dataset."
             )
     print()
-
-    # Saves the processed dataset as a JSON file.
-    processed_data_directory_path = check_directory_path_existence(
-        f"data/processed_data/v{dataset_version}/tatoeba/{language}-en"
-    )
-
-    # Saves the processed dataset as a text file.
-    save_text_file("\n".join(processed_en_texts), "0.en", processed_data_directory_path)
-    save_text_file(
-        "\n".join(processed_eu_texts), f"0.{language}", processed_data_directory_path
+    print(
+        f"No. of processed {language}-en pairs in Tatoeba dataset: {n_processed_pairs}"
     )
     print()
 
@@ -543,6 +533,11 @@ def main():
 
     # Extracts the Europarl dataset for the language given as input by user.
     extract_europarl_dataset(args.language)
+
+    # Creates global variables for processed texts & unique words count.
+    global processed_texts, unique_words_count
+    processed_texts = list()
+    unique_words_count = {"en": dict(), args.language: dict()}
 
     # Preprocesses the Tatoeba dataset for the language given as input by user.
     preprocess_tatoeba_dataset(
