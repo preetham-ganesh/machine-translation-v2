@@ -429,6 +429,42 @@ def preprocess_paracrawl_dataset(language: str, n_max_words_per_text: int) -> No
     print()
 
 
+def identify_language_rare_words(language: str) -> None:
+    """Identifies rare words for the language in the dataset.
+
+    Identifies rare words for the language in the dataset.
+
+    Args:
+        language: A string for the language the rare words should be identified for.
+
+    Returns:
+        None.
+    """
+    # Checks if the language is valid or not.
+    check_language(language)
+
+    print(
+        f"No. of unique words for {language} language in the dataset: {len(unique_words_count[language])}"
+    )
+
+    # Iterates across unique words in the dataset based on language.
+    for word in unique_words_count[language].keys():
+        # If count of word is 1, word consists of only alphabets, and length of word is between 8 & 10,
+        # then word is added to rare words list.
+        if (
+            unique_words_count[language][word] == 1
+            and word.isalpha()
+            and not word.isdigit()
+            and len(word) > 7
+            and len(word) < 11
+        ):
+            rare_words[language].add(word)
+    print(
+        f"No. of rare words for {language} language in the dataset: {len(rare_words[language])}"
+    )
+    print()
+
+
 def main():
     print()
 
@@ -470,10 +506,11 @@ def main():
     # Extracts the Europarl dataset for the language given as input by user.
     extract_europarl_dataset(args.language)
 
-    # Creates global variables for processed texts & unique words count.
-    global processed_texts, unique_words_count
+    # Creates global variables for processed texts, unique words count & rare words.
+    global processed_texts, unique_words_count, rare_words
     processed_texts = list()
     unique_words_count = {"en": dict(), args.language: dict(), "dataset": dict()}
+    rare_words = {"en": set(), args.language: set()}
 
     # Preprocesses the Tatoeba dataset for the language given as input by user.
     preprocess_tatoeba_dataset(
