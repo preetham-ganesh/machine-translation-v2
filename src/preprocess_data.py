@@ -52,6 +52,7 @@ class PreprocessDataset(object):
         self.n_max_words_per_text = 50
         self.unique_word_count = {"en": dict(), language: dict()}
         self.rare_words = {"en": set(), self.language: set()}
+        self.processed_texts = list()
 
     def extract_tatoeba_dataset(self) -> None:
         """Extracts the Tatoeba dataset for the language given as input by user.
@@ -259,8 +260,7 @@ class PreprocessDataset(object):
         Preprocesses the Tatoeba dataset for the language given as input by user.
 
         Args:
-            language: A string for the language the Tatoeba dataset should be preprocessed.
-            n_max_words_per_text: An integer for the maximum number of words allowed in a text.
+            None.
 
         Returns:
             None.
@@ -294,7 +294,7 @@ class PreprocessDataset(object):
 
             # If text is not empty, then it is appended to list.
             if en_text != "" and eu_text != "":
-                processed_texts.append(
+                self.processed_texts.append(
                     {"en": en_text, self.language: eu_text, "dataset": "tatoeba"}
                 )
                 n_processed_pairs += 1
@@ -310,128 +310,109 @@ class PreprocessDataset(object):
         )
         print()
 
+    def preprocess_europarl_dataset(self) -> None:
+        """Preprocesses the Europarl dataset for the language given as input by user.
 
-def preprocess_europarl_dataset(language: str, n_max_words_per_text: int) -> None:
-    """Preprocesses the Europarl dataset for the language given as input by user.
+        Preprocesses the Europarl dataset for the language given as input by user.
 
-    Preprocesses the Europarl dataset for the language given as input by user.
+        Args:
+            None.
 
-    Args:
-        language: A string for the language the Europarl dataset should be preprocessed.
-        n_max_words_per_text: An integer for the maximum number of words allowed in a text.
+        Returns:
+            None.
+        """
+        # Loads the Europarl dataset for the language given as input by user.
+        original_en_texts = load_text_file(
+            f"europarl-v7.{self.language}-en.en",
+            os.path.join(BASE_PATH, f"data/extracted_data/europarl/{self.language}-en"),
+        ).split("\n")
+        original_eu_texts = load_text_file(
+            f"europarl-v7.{self.language}-en.{self.language}",
+            os.path.join(BASE_PATH, f"data/extracted_data/europarl/{self.language}-en"),
+        ).split("\n")
 
-    Returns:
-        None.
-    """
-    # Checks if the language is valid or not.
-    check_language(language)
-    assert isinstance(
-        n_max_words_per_text, int
-    ), "Variable n_max_words_per_text should be of type 'int'."
-
-    # Loads the Europarl dataset for the language given as input by user.
-    original_en_texts = load_text_file(
-        f"europarl-v7.{language}-en.en",
-        os.path.join(BASE_PATH, f"data/extracted_data/europarl/{language}-en"),
-    ).split("\n")
-    original_eu_texts = load_text_file(
-        f"europarl-v7.{language}-en.{language}",
-        os.path.join(BASE_PATH, f"data/extracted_data/europarl/{language}-en"),
-    ).split("\n")
-
-    # Checks if the length of both the lists are equal.
-    assert len(original_en_texts) == len(
-        original_eu_texts
-    ), f"Length of en and {language} texts should be equal."
-    print(
-        f"No. of original {language}-en pairs in Europarl dataset: {len(original_en_texts)}"
-    )
-    print()
-
-    # Iterates across rows in the dataset.
-    n_processed_pairs = 0
-    for id_0 in range(len(original_en_texts)):
-        # Preprocesses the text in the dataset.
-        en_text = preprocess_text(original_en_texts[id_0], "en", n_max_words_per_text)
-        eu_text = preprocess_text(
-            original_eu_texts[id_0], language, n_max_words_per_text
+        # Checks if the length of both the lists are equal.
+        assert len(original_en_texts) == len(
+            original_eu_texts
+        ), f"Length of en and {self.language} texts should be equal."
+        print(
+            f"No. of original {self.language}-en pairs in Europarl dataset: {len(original_en_texts)}"
         )
+        print()
 
-        # If text is not empty, then it is appended to list.
-        if en_text != "" and eu_text != "":
-            processed_texts.append(
-                {"en": en_text, language: eu_text, "dataset": "europarl"}
-            )
-            n_processed_pairs += 1
+        # Iterates across rows in the dataset.
+        n_processed_pairs = 0
+        for id_0 in range(len(original_en_texts)):
+            # Preprocesses the text in the dataset.
+            en_text = self.preprocess_text(original_en_texts[id_0], "en", True)
+            eu_text = self.preprocess_text(original_eu_texts[id_0], self.language, True)
 
-        if id_0 % 1000 == 0:
-            print(
-                f"Finished processing {round((id_0 / len(original_en_texts)) * 100, 3)}% {language}-en pairs in "
-                + "Europarl dataset."
-            )
-    print()
-    print(
-        f"No. of processed {language}-en pairs in Europarl dataset: {n_processed_pairs}"
-    )
-    print()
+            # If text is not empty, then it is appended to list.
+            if en_text != "" and eu_text != "":
+                processed_texts.append(
+                    {"en": en_text, self.language: eu_text, "dataset": "europarl"}
+                )
+                n_processed_pairs += 1
+
+            if id_0 % 1000 == 0:
+                print(
+                    f"Finished processing {round((id_0 / len(original_en_texts)) * 100, 3)}% {self. language}-en pairs "
+                    + "in Europarl dataset."
+                )
+        print()
+        print(
+            f"No. of processed {self.language}-en pairs in Europarl dataset: {n_processed_pairs}"
+        )
+        print()
 
 
-def preprocess_paracrawl_dataset(language: str, n_max_words_per_text: int) -> None:
+def preprocess_paracrawl_dataset(self) -> None:
     """Preprocesses the Paracrawl dataset for the language given as input by user.
 
     Preprocesses the Paracrawl dataset for the language given as input by user.
 
     Args:
-        language: A string for the language the Paracrawl dataset should be preprocessed.
-        n_max_words_per_text: An integer for the maximum number of words allowed in a text.
+        None.
 
     Returns:
         None.
     """
-    # Checks if the language is valid or not.
-    check_language(language)
-    assert isinstance(
-        n_max_words_per_text, int
-    ), "Variable n_max_words_per_text should be of type 'int'."
-
     # Loads the Paracrawl dataset for the language given as input by user.
     dataset, info = tfds.load(
-        f"para_crawl/en{language}_plain_text".format(language),
+        f"para_crawl/en{self.language}_plain_text".format(self.language),
         split="train",
         with_info=True,
         shuffle_files=True,
-        data_dir=f"{BASE_PATH}/data/raw_data/paracrawl/{language}-en",
+        data_dir=f"{BASE_PATH}/data/raw_data/paracrawl/{self.language}-en",
     )
     n_rows = info.splits["train"].num_examples
-    print(f"No. of original {language}-en pairs in Paracrawl dataset: {n_rows}")
+    print(f"No. of original {self.language}-en pairs in Paracrawl dataset: {n_rows}")
 
     # Iterates across rows in the dataset.
     n_processed_pairs = 0
     for id_0, row in enumerate(dataset):
 
         # Preprocesses the text in the dataset.
-        en_text = preprocess_text(
-            row["en"].numpy().decode("utf-8"), "en", n_max_words_per_text
-        )
-        eu_text = preprocess_text(
-            row[language].numpy().decode("utf-8"), language, n_max_words_per_text
+        en_text = self.preprocess_text(row["en"].numpy().decode("utf-8"), "en", True)
+        eu_text = self.preprocess_text(
+            row[self.language].numpy().decode("utf-8"), self.language, True
         )
 
         # If text is not empty, then it is appended to list.
         if en_text != "" and eu_text != "":
             processed_texts.append(
-                {"en": en_text, language: eu_text, "dataset": "paracrawl"}
+                {"en": en_text, self.language: eu_text, "dataset": "paracrawl"}
             )
             n_processed_pairs += 1
 
         if id_0 % 1000 == 0:
             print(
-                f"Finished processing {round((id_0 / n_rows) * 100, 3)}% {language}-en pairs in "
+                f"Finished processing {round((id_0 / n_rows) * 100, 3)}% {self.language}-en pairs in "
                 + "Paracrawl dataset."
             )
     print()
     print(
-        f"No. of processed {language}-en pairs in Paracrawl dataset: {n_processed_pairs}"
+        f"No. of processed {self.language}-en pairs in Paracrawl dataset: {n_processed_pairs}"
     )
     print()
 
