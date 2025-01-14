@@ -288,7 +288,9 @@ def preprocess_tatoeba_dataset(
 
         # If text is not empty, then it is appended to list.
         if en_text != "" and eu_text != "":
-            processed_texts.append({"en": en_text, language: eu_text})
+            processed_texts.append(
+                {"en": en_text, language: eu_text, "dataset": "tatoeba"}
+            )
             n_processed_pairs += 1
 
         if id_0 % 1000 == 0:
@@ -302,9 +304,7 @@ def preprocess_tatoeba_dataset(
     print()
 
 
-def preprocess_europarl_dataset(
-    language: str, n_max_words_per_text: int, dataset_version: str
-) -> None:
+def preprocess_europarl_dataset(language: str, n_max_words_per_text: int) -> None:
     """Preprocesses the Europarl dataset for the language given as input by user.
 
     Preprocesses the Europarl dataset for the language given as input by user.
@@ -312,7 +312,6 @@ def preprocess_europarl_dataset(
     Args:
         language: A string for the language the Europarl dataset should be preprocessed.
         n_max_words_per_text: An integer for the maximum number of words allowed in a text.
-        dataset_version: A string for the version by which the processed dataset should be saved as.
 
     Returns:
         None.
@@ -322,9 +321,6 @@ def preprocess_europarl_dataset(
     assert isinstance(
         n_max_words_per_text, int
     ), "Variable n_max_words_per_text should be of type 'int'."
-    assert isinstance(
-        dataset_version, str
-    ), "Variable dataset_version should be of type 'str'."
 
     # Loads the Europarl dataset for the language given as input by user.
     original_en_texts = load_text_file(
@@ -340,17 +336,14 @@ def preprocess_europarl_dataset(
     assert len(original_en_texts) == len(
         original_eu_texts
     ), f"Length of en and {language} texts should be equal."
-
-    # Creates the directory path for processed data.
-    processed_data_directory_path = check_directory_path_existence(
-        f"data/processed_data/v{dataset_version}/europarl/{language}-en"
+    print(
+        f"No. of original {language}-en pairs in Europarl dataset: {len(original_en_texts)}"
     )
+    print()
 
     # Iterates across rows in the dataset.
-    d_id = 0
-    processed_en_texts, processed_eu_texts = list(), list()
+    n_processed_pairs = 0
     for id_0 in range(len(original_en_texts)):
-
         # Preprocesses the text in the dataset.
         en_text = preprocess_text(original_en_texts[id_0], "en", n_max_words_per_text)
         eu_text = preprocess_text(
@@ -359,47 +352,20 @@ def preprocess_europarl_dataset(
 
         # If text is not empty, then it is appended to list.
         if en_text != "" and eu_text != "":
-            processed_en_texts.append(en_text)
-            processed_eu_texts.append(eu_text)
+            processed_texts.append(
+                {"en": en_text, language: eu_text, "dataset": "europarl"}
+            )
+            n_processed_pairs += 1
 
         if id_0 % 1000 == 0:
             print(
                 f"Finished processing {round((id_0 / len(original_en_texts)) * 100, 3)}% {language}-en pairs in "
                 + "Europarl dataset."
             )
-
-        # If the length of the processed texts is 1 million, then saves the text file.
-        if len(processed_en_texts) == 1000000:
-            print()
-
-            # Saves the processed dataset as a text file.
-            save_text_file(
-                "\n".join(processed_en_texts),
-                f"{d_id}.en",
-                processed_data_directory_path,
-            )
-            save_text_file(
-                "\n".join(processed_eu_texts),
-                f"{d_id}.{language}",
-                processed_data_directory_path,
-            )
-            d_id += 1
-            processed_en_texts, processed_eu_texts = list(), list()
-            print()
-
-    # If the length of the processed texts is more than 0, then saves the text file.
-    if len(processed_en_texts) > 0:
-        print()
-        save_text_file(
-            "\n".join(processed_en_texts),
-            f"{d_id}.en",
-            processed_data_directory_path,
-        )
-        save_text_file(
-            "\n".join(processed_eu_texts),
-            f"{d_id}.{language}",
-            processed_data_directory_path,
-        )
+    print()
+    print(
+        f"No. of processed {language}-en pairs in Europarl dataset: {n_processed_pairs}"
+    )
     print()
 
 
@@ -545,7 +511,7 @@ def main():
     # Creates global variables for processed texts & unique words count.
     global processed_texts, unique_words_count
     processed_texts = list()
-    unique_words_count = {"en": dict(), args.language: dict()}
+    unique_words_count = {"en": dict(), args.language: dict(), "dataset": dict()}
 
     # Preprocesses the Tatoeba dataset for the language given as input by user.
     preprocess_tatoeba_dataset(
