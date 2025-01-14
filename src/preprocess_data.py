@@ -139,7 +139,9 @@ def remove_html_markup(text: str) -> str:
     return " ".join(text.split())
 
 
-def preprocess_text(text: str, language: str, n_max_words_per_text: int) -> str:
+def preprocess_text(
+    text: str, language: str, n_max_words_per_text: int, update_word_count: bool
+) -> str:
     """Preprocesses text to remove unwanted characters from it.
 
     Preprocesses text to remove unwanted characters from it.
@@ -226,6 +228,12 @@ def preprocess_text(text: str, language: str, n_max_words_per_text: int) -> str:
         # If word is not empty, then it is appended to list.
         if word != "":
             filtered_words.append(word)
+
+            # Unique word count is updated for current word.
+            if update_word_count:
+                unique_words_count[language][word] = 1 + unique_words_count[
+                    language
+                ].get(word, 0)
 
     # Converts of list of filtered words into a single string.
     filtered_text = " ".join(filtered_words)
