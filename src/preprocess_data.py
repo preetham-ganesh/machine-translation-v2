@@ -23,6 +23,8 @@ import tensorflow_datasets as tfds
 from src.utils import check_directory_path_existence, save_text_file, load_text_file
 from src.download_data import check_language
 
+from typing import List
+
 
 def extract_tatoeba_dataset(language: str) -> None:
     """Extracts the Tatoeba dataset for the language given as input by user.
@@ -463,6 +465,31 @@ def identify_language_rare_words(language: str) -> None:
         f"No. of rare words for {language} language in the dataset: {len(rare_words[language])}"
     )
     print()
+
+
+def identify_common_rare_words(language: str) -> List[str]:
+    """Identifies common rare words between en & the european language.
+
+    Identifies common rare words between en & the european language.
+
+    Args:
+        language: A string for the language the common rare words should be identified for.
+
+    Returns:
+        None.
+    """
+    # Checks if the language is valid or not.
+    check_language(language)
+
+    # Identifies rare words for each language in the dataset.
+    identify_language_rare_words("en")
+    identify_language_rare_words(language)
+
+    # Identifies common rare words between en & the european language.
+    common_rare_words = set(rare_words[language] & rare_words["en"])
+    print(
+        f"No. of common rare words between en & {language} texts: {len(common_rare_words)}"
+    )
 
 
 def main():
