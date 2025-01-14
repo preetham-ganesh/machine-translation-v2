@@ -95,49 +95,47 @@ class PreprocessText(object):
             )
             print()
 
+    def extract_europarl_dataset(self) -> None:
+        """Extracts the Europarl dataset for the language given as input by user.
 
-def extract_europarl_dataset(language: str) -> None:
-    """Extracts the Europarl dataset for the language given as input by user.
+        Extracts the Europarl dataset for the language given as input by user.
 
-    Extracts the Europarl dataset for the language given as input by user.
+        Args:
+            None.
 
-    Args:
-        language: A string for the language the dataset belongs to.
-
-    Returns:
-        None.
-    """
-    # Checks if the language is valid or not.
-    check_language(language)
-
-    # Creates absolute directory path for downloaded data tar file.
-    tar_file_path = os.path.join(BASE_PATH, f"data/raw_data/europarl/{language}-en.tgz")
-
-    # Creates the directory path.
-    extracted_data_directory_path = check_directory_path_existence(
-        f"data/extracted_data/europarl/{language}-en"
-    )
-
-    # If file does not exist, then extracts files from the directory.
-    if not os.path.exists(
-        os.path.join(
-            extracted_data_directory_path,
-            f"europarl-v7.{language}-en.{language}",
+        Returns:
+            None.
+        """
+        # Creates absolute directory path for downloaded data tar file.
+        tar_file_path = os.path.join(
+            BASE_PATH, f"data/raw_data/europarl/{self.language}-en.tgz"
         )
-    ):
-        # Extracts files from downloaded data tar file into a directory.
-        try:
-            file = tarfile.open(tar_file_path)
-            file.extractall(extracted_data_directory_path)
-            file.close()
-        except FileNotFoundError as error:
-            raise FileNotFoundError(
-                f"{tar_file_path} does not exist. Run 'download_data.py' to download the data."
+
+        # Creates the directory path.
+        extracted_data_directory_path = check_directory_path_existence(
+            f"data/extracted_data/europarl/{self.language}-en"
+        )
+
+        # If file does not exist, then extracts files from the directory.
+        if not os.path.exists(
+            os.path.join(
+                extracted_data_directory_path,
+                f"europarl-v7.{self.language}-en.{self.language}",
             )
-        print(
-            f"Finished extracting files from '{language}-en.tgz' to {extracted_data_directory_path}."
-        )
-        print()
+        ):
+            # Extracts files from downloaded data tar file into a directory.
+            try:
+                file = tarfile.open(tar_file_path)
+                file.extractall(extracted_data_directory_path)
+                file.close()
+            except FileNotFoundError as error:
+                raise FileNotFoundError(
+                    f"{tar_file_path} does not exist. Run 'download_data.py' to download the data."
+                )
+            print(
+                f"Finished extracting files from '{self.language}-en.tgz' to {extracted_data_directory_path}."
+            )
+            print()
 
 
 def remove_html_markup(text: str) -> str:
