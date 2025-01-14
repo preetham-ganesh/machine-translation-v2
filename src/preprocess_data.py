@@ -163,13 +163,14 @@ class PreprocessDataset(object):
         # Replace consecutive whitespace characters with a single space.
         return " ".join(text.split())
 
-    def preprocess_text(self, text: str, update_word_count: bool) -> str:
+    def preprocess_text(self, text: str, language: str, update_word_count: bool) -> str:
         """Preprocesses text to remove unwanted characters from it.
 
         Preprocesses text to remove unwanted characters from it.
 
         Args:
             text: A string for the text which needs to be processed.
+            language: A string for the language the text belongs to.
             update_unique_words: A boolean value for updating the word count.
 
         Returns:
@@ -197,7 +198,7 @@ class PreprocessDataset(object):
         text = text.replace('"', ' " ')
 
         # Based on name of the language, removes characters from text.
-        if self.language == "en":
+        if language == "en":
             text = "".join(
                 id_0
                 for id_0 in unicodedata.normalize("NFKD", str(text))
@@ -205,13 +206,13 @@ class PreprocessDataset(object):
             )
             text = re.sub(r"[^-!$&(),./%0-9:;?a-z€'\"]+", " ", text)
 
-        elif self.language == "es":
+        elif language == "es":
             text = re.sub(r"[^-!$&(),./%0-9:;?ÁÉÍÓÚÑÜáéíóúñü¿¡a-z€'\"]+", " ", text)
 
-        elif self.language == "fr":
+        elif language == "fr":
             text = re.sub(r"[^-!$&(),./%0-9:;?!çàâæéèêëîïôöûüù'€\"*]+", " ", text)
 
-        elif self.language == "de":
+        elif language == "de":
             text = re.sub(r"[^-!$&(),./%0-9:;?!äöüßœáéíóúñüa-z'€\"*]+", " ", text)
 
         # Collapses repeated punctuation.
@@ -244,77 +245,70 @@ class PreprocessDataset(object):
 
                 # Unique word count is updated for current word.
                 if update_word_count:
-                    unique_words_count[self.language][word] = 1 + unique_words_count[
-                        self.language
+                    unique_words_count[language][word] = 1 + unique_words_count[
+                        language
                     ].get(word, 0)
 
         # Converts of list of filtered words into a single string.
         filtered_text = " ".join(filtered_words)
         return filtered_text
 
+    def preprocess_tatoeba_dataset(self) -> None:
+        """Preprocesses the Tatoeba dataset for the language given as input by user.
 
-def preprocess_tatoeba_dataset(
-    language: str,
-    n_max_words_per_text: int,
-) -> None:
-    """Preprocesses the Tatoeba dataset for the language given as input by user.
+        Preprocesses the Tatoeba dataset for the language given as input by user.
 
-    Preprocesses the Tatoeba dataset for the language given as input by user.
+        Args:
+            language: A string for the language the Tatoeba dataset should be preprocessed.
+            n_max_words_per_text: An integer for the maximum number of words allowed in a text.
 
-    Args:
-        language: A string for the language the Tatoeba dataset should be preprocessed.
-        n_max_words_per_text: An integer for the maximum number of words allowed in a text.
+        Returns:
+            None.
+        """
+        # A dictionary for the name of the text files in each language.
+        text_name = {"fr": "fra.txt", "de": "deu.txt", "es": "spa.txt"}
 
-    Returns:
-        None.
-    """
-    # Checks if the language is valid or not.
-    check_language(language)
-    assert isinstance(
-        n_max_words_per_text, int
-    ), "Variable n_max_words_per_text should be of type 'int'."
+        # Loads the Tatoeba dataset for the language given as input by user.
+        data = pd.read_csv(
+            os.path.join(
+                BASE_PATH,
+                f"data/extracted_data/tatoeba/{self.language}-en",
+                text_name[self.language],
+            ),
+            sep="\t",
+            encoding="utf-8",
+            names=["en", self.language, "x"],
+        )
+        print(
+            f"No. of original {self.language}-en pairs in Tatoeba dataset: {len(data)}"
+        )
+        print()
 
-    # A dictionary for the name of the text files in each language.
-    text_name = {"fr": "fra.txt", "de": "deu.txt", "es": "spa.txt"}
+        # Iterates across rows in the dataset.
+        n_processed_pairs = 0
+        for id_0, row in data.iterrows():
 
-    # Loads the Tatoeba dataset for the language given as input by user.
-    data = pd.read_csv(
-        os.path.join(
-            BASE_PATH,
-            f"data/extracted_data/tatoeba/{language}-en",
-            text_name[language],
-        ),
-        sep="\t",
-        encoding="utf-8",
-        names=["en", language, "x"],
-    )
-    print(f"No. of original {language}-en pairs in Tatoeba dataset: {len(data)}")
-    print()
+            # Preprocesses the text in the dataset.
+            en_text = self.preprocess_text(str(row["en"]), "en", True)
+            eu_text = self.preprocess_text(str(row[self.language]), self.language, True)
 
-    # Iterates across rows in the dataset.
-    n_processed_pairs = 0
-    for id_0, row in data.iterrows():
+            # If text is not empty, then it is appended to list.
+            if en_text != "" and eu_text != "":
+                processed_texts.append(
+                    {"en": en_text, self.language: eu_text, "dataset": "tatoeba"}
+                )
+                n_processed_pairs += 1
 
-        # Preprocesses the text in the dataset.
-        en_text = preprocess_text(str(row["en"]), "en", n_max_words_per_text)
-        eu_text = preprocess_text(str(row[language]), language, n_max_words_per_text)
-
-        # If text is not empty, then it is appended to list.
-        if en_text != "" and eu_text != "":
-            processed_texts.append(
-                {"en": en_text, language: eu_text, "dataset": "tatoeba"}
-            )
-            n_processed_pairs += 1
-
-        if id_0 % 1000 == 0:
-            print(
-                f"Finished processing {round((id_0 / len(data)) * 100, 3)}% {language}-en pairs in Tatoeba dataset."
-            )
-    print()
-    print(
-        f"No. of processed {language}-en pairs in Tatoeba dataset: {n_processed_pairs}"
-    )
-    print()
+            if id_0 % 1000 == 0:
+                print(
+                    f"Finished processing {round((id_0 / len(data)) * 100, 3)}% {self.language}-en pairs in Tatoeba "
+                    + "dataset."
+                )
+        print()
+        print(
+            f"No. of processed {self.language}-en pairs in Tatoeba dataset: {n_processed_pairs}"
+        )
+        print()
 
 
 def preprocess_europarl_dataset(language: str, n_max_words_per_text: int) -> None:
