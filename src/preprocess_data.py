@@ -50,7 +50,7 @@ class PreprocessDataset(object):
         # Initializes class variables.
         self.language = language
         self.n_max_words_per_text = 50
-        self.unique_word_count = {"en": dict(), language: dict()}
+        self.unique_words_count = {"en": dict(), language: dict()}
         self.rare_words = {"en": set(), self.language: set()}
         self.processed_texts = list()
 
@@ -417,44 +417,42 @@ class PreprocessDataset(object):
         print(
             f"No. of processed {self.language}-en pairs in Paracrawl dataset: {n_processed_pairs}"
         )
+        print()
 
-    print()
+    def identify_language_rare_words(self, language: str) -> None:
+        """Identifies rare words for the language in the dataset.
 
+        Identifies rare words for the language in the dataset.
 
-def identify_language_rare_words(language: str) -> None:
-    """Identifies rare words for the language in the dataset.
+        Args:
+            language: A string for the language the rare words should be identified for.
 
-    Identifies rare words for the language in the dataset.
+        Returns:
+            None.
+        """
+        # Checks if the language is valid or not.
+        check_language(language)
 
-    Args:
-        language: A string for the language the rare words should be identified for.
+        print(
+            f"No. of unique words for {language} language in the dataset: {len(self.unique_words_count[language])}"
+        )
 
-    Returns:
-        None.
-    """
-    # Checks if the language is valid or not.
-    check_language(language)
-
-    print(
-        f"No. of unique words for {language} language in the dataset: {len(unique_words_count[language])}"
-    )
-
-    # Iterates across unique words in the dataset based on language.
-    for word in unique_words_count[language].keys():
-        # If count of word is 1, word consists of only alphabets, and length of word is between 8 & 10,
-        # then word is added to rare words list.
-        if (
-            unique_words_count[language][word] == 1
-            and word.isalpha()
-            and not word.isdigit()
-            and len(word) > 7
-            and len(word) < 11
-        ):
-            rare_words[language].add(word)
-    print(
-        f"No. of rare words for {language} language in the dataset: {len(rare_words[language])}"
-    )
-    print()
+        # Iterates across unique words in the dataset based on language.
+        for word in self.unique_words_count[language].keys():
+            # If count of word is 1, word consists of only alphabets, and length of word is between 8 & 10,
+            # then word is added to rare words list.
+            if (
+                self.unique_words_count[language][word] == 1
+                and word.isalpha()
+                and not word.isdigit()
+                and len(word) > 7
+                and len(word) < 11
+            ):
+                self.rare_words[language].add(word)
+        print(
+            f"No. of rare words for {language} language in the dataset: {len(self.rare_words[language])}"
+        )
+        print()
 
 
 def identify_common_rare_words(language: str) -> List[str]:
