@@ -29,7 +29,9 @@ from typing import List
 class PreprocessDataset(object):
     """"""
 
-    def __init__(self, language: str, n_max_words_per_text: int) -> None:
+    def __init__(
+        self, language: str, dataset_size: str, n_max_words_per_text: int
+    ) -> None:
         """Creates object attributes for the PreprocessText class.
 
         Creates object attributes for the PreprocessText class.
@@ -44,11 +46,19 @@ class PreprocessDataset(object):
         # Asserts type & values of the arguments.
         check_language(language)
         assert isinstance(
+            dataset_size, str
+        ), "Variable dataset_size should be of type 'str'."
+        assert dataset_size in [
+            "mini",
+            "full",
+        ], "Variable dataset_size should be 'mini' or 'full'."
+        assert isinstance(
             n_max_words_per_text, int
         ), "Variable n_max_words_per_text should be of type 'int'."
 
         # Initializes class variables.
         self.language = language
+        self.dataset_size = dataset_size
         self.n_max_words_per_text = 50
         self.unique_words_count = {"en": dict(), language: dict()}
         self.rare_words = {"en": set(), self.language: set()}
@@ -304,6 +314,10 @@ class PreprocessDataset(object):
                     f"Finished processing {round((id_0 / len(data)) * 100, 3)}% {self.language}-en pairs in Tatoeba "
                     + "dataset."
                 )
+
+            # If dataset size is mini, then only 10% of the dataset is processed.
+            if self.dataset_size == "mini" and n_processed_pairs // len(data) == 0.1:
+                break
         print()
         print(
             f"No. of processed {self.language}-en pairs in Tatoeba dataset: {n_processed_pairs}"
@@ -359,6 +373,13 @@ class PreprocessDataset(object):
                     f"Finished processing {round((id_0 / len(original_en_texts)) * 100, 3)}% {self. language}-en pairs "
                     + "in Europarl dataset."
                 )
+
+            # If dataset size is mini, then only 10% of the dataset is processed.
+            if (
+                self.dataset_size == "mini"
+                and n_processed_pairs // len(original_en_texts) == 0.1
+            ):
+                break
         print()
         print(
             f"No. of processed {self.language}-en pairs in Europarl dataset: {n_processed_pairs}"
@@ -413,6 +434,10 @@ class PreprocessDataset(object):
                     f"Finished processing {round((id_0 / n_rows) * 100, 3)}% {self.language}-en pairs in "
                     + "Paracrawl dataset."
                 )
+
+            # If dataset size is mini, then only 10% of the dataset is processed.
+            if self.dataset_size == "mini" and n_processed_pairs // n_rows == 0.1:
+                break
         print()
         print(
             f"No. of processed {self.language}-en pairs in Paracrawl dataset: {n_processed_pairs}"
@@ -474,6 +499,43 @@ class PreprocessDataset(object):
         print(
             f"No. of common rare words between en & {self.language} texts: {len(self.common_rare_words)}"
         )
+
+    def oov_handling_per_pair(self, en_text: str, eu_text: str) -> List[str]:
+        """Handles out-of-vocabulary words in the text pairs.
+
+        Handles out-of-vocabulary words in the text pairs. Converts rare words into unique format.
+
+        Args:
+            en_text: A string for the English text.
+            eu_text: A string for the European text.
+
+        Returns:
+            A list of strings for the English & European text after handling out-of-vocabulary words.
+        """
+        # Asserts type & values of the arguments.
+        assert isinstance(en_text, str), "Variable en_text should be of type 'str'."
+        assert isinstance(eu_text, str), "Variable eu_text should be of type 'str'."
+
+        # Converts text into unique set of words.
+        en_words = set(en_text.split(" "))
+        eu_words = set(eu_text.split(" "))
+
+        # Identifies common list of rare words between en & eu text.
+        common_words = list(en_words & self.common_rare_words & eu_words)
+
+        # Iterates across words in common words list.
+        for word in common_words:
+            # Updates common word in both text. E.g.: 'preetham' -> '<p#r#e#e#t#h#a#m>'
+            en_text = en_text.replace(" {} ".format(word), " <" + "#".join(word) + "> ")
+            eu_text = eu_text.replace(" {} ".format(word), " <" + "#".join(word) + "> ")
+
+        # If no. of words in current text is more than maximum limit, then text is ignored.
+        if (
+            len(en_text.split(" ")) > self.n_max_words_per_text
+            or len(eu_text.split(" ")) > self.n_max_words_per_text
+        ):
+            return []
+        return [en_text, eu_text]
 
 
 def main():
