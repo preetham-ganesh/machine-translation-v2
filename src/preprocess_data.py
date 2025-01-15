@@ -316,7 +316,7 @@ class PreprocessDataset(object):
                 )
 
             # If dataset size is mini, then only 10% of the dataset is processed.
-            if self.dataset_size == "mini" and n_processed_pairs // len(data) == 0.1:
+            if self.dataset_size == "mini" and n_processed_pairs // len(data) == 0.15:
                 break
         print()
         print(
@@ -377,7 +377,7 @@ class PreprocessDataset(object):
             # If dataset size is mini, then only 10% of the dataset is processed.
             if (
                 self.dataset_size == "mini"
-                and n_processed_pairs // len(original_en_texts) == 0.1
+                and n_processed_pairs // len(original_en_texts) == 0.15
             ):
                 break
         print()
@@ -436,7 +436,7 @@ class PreprocessDataset(object):
                 )
 
             # If dataset size is mini, then only 10% of the dataset is processed.
-            if self.dataset_size == "mini" and n_processed_pairs // n_rows == 0.1:
+            if self.dataset_size == "mini" and n_processed_pairs // n_rows == 0.15:
                 break
         print()
         print(
@@ -536,6 +536,51 @@ class PreprocessDataset(object):
         ):
             return []
         return [en_text, eu_text]
+
+    def oov_handling(self) -> None:
+        """Handles out-of-vocabulary words for all text pairs in the dataset.
+
+        Handles out-of-vocabulary words for all text pairs in the dataset.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        # Identifies common rare words between en & the european language.
+        self.identify_common_rare_words()
+
+        # Iterates across text pairs in the dataset.
+        n_oov_handled_pairs = 0
+        self.oov_handled_texts = list()
+        for id_0, row in enumerate(self.processed_texts):
+
+            # Handles out-of-vocabulary words in the text pairs.
+            en_text, eu_text = self.oov_handling_per_pair(row["en"], row[self.language])
+
+            # If text is not empty, then it is appended to list.
+            if en_text != "" and eu_text != "":
+                self.oov_handled_texts.append({"en": en_text, self.language: eu_text})
+                n_oov_handled_pairs += 1
+
+            if id_0 % 1000 == 0:
+                print(
+                    f"Finished processing {round((id_0 / len(self.processed_texts)) * 100, 3)}% {self.language}-en"
+                    + " pairs in the dataset."
+                )
+
+            # If dataset size is mini, then only 10% of the dataset is processed.
+            if (
+                self.dataset_size == "mini"
+                and n_oov_handled_pairs // len(self.processed_texts) == 0.1
+            ):
+                break
+        print()
+        print(
+            f"No. of processed {self.language}-en pairs in the dataset: {n_oov_handled_pairs}"
+        )
+        print()
 
 
 def main():
