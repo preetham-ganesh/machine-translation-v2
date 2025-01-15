@@ -19,6 +19,7 @@ logging.getLogger("tensorflow").setLevel(logging.FATAL)
 from bs4 import BeautifulSoup
 import pandas as pd
 import tensorflow_datasets as tfds
+from sklearn.utils import shuffle
 
 from src.utils import check_directory_path_existence, save_text_file, load_text_file
 from src.download_data import check_language
@@ -581,6 +582,39 @@ class PreprocessDataset(object):
             f"No. of processed {self.language}-en pairs in the dataset: {n_oov_handled_pairs}"
         )
         print()
+
+    def split_dataset(self) -> None:
+        """Splits the OOV handled text pairs into train, validation & test sets.
+
+        Splits the OOV handled text pairs into train, validation & test sets.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
+        # Shuffles the text pairs in the dataset.
+        self.oov_handled_texts = shuffle(self.oov_handled_texts, random_state=42)
+
+        # Sets the no. of validation & test pairs.
+        n_validation_pairs, n_test_pairs = 2000, 2000
+
+        # Splits the dataset into train, validation & test sets.
+        self.validation_texts = self.oov_handled_texts[:n_validation_pairs]
+        self.test_texts = self.oov_handled_texts[
+            n_validation_pairs : n_validation_pairs + n_test_pairs
+        ]
+        self.train_texts = self.oov_handled_texts[n_validation_pairs + n_test_pairs :]
+        print(
+            f"No. of train {self.language}-en pairs in the dataset: {len(self.train_texts)}"
+        )
+        print(
+            f"No. of validation {self.language}-en pairs in the dataset: {len(self.validation_texts)}"
+        )
+        print(
+            f"No. of test {self.language}-en pairs in the dataset: {len(self.test_texts)}"
+        )
 
 
 def main():
